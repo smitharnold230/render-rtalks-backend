@@ -38,6 +38,10 @@ app.use(rateLimit({
   message: { error: 'Too many requests from this IP' }
 }));
 
+// Serve static files from the root directory
+app.use(express.static(__dirname));
+
+// Serve uploaded files with proper headers
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
   maxAge: '1d',
   etag: true,
