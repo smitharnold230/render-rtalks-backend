@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>R-Talks Backend API Tests</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+        .tab-container {
+            margin: 20px 0;
+        }
+        .tab-buttons {
+            margin-bottom: 20px;
+        }
+        .tab-button {
+            padding: 10px 20px;
+            margin-right: 10px;
+            border: none;
+            background: #f0f0f0;
+            cursor: pointer;
+        }
+        .tab-button.active {
+            background: #007bff;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input[type="text"],
+        input[type="password"],
+        input[type="file"] {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .error {
+            color: red;
+            margin-top: 5px;
+        }
+        .success {
+            color: green;
+            margin-top: 5px;
+        }
+        #imagePreview img {
+            max-width: 300px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>R-Talks Backend API Tests</h1>
+    
+    <div class="tab-container">
+        <div class="tab-buttons">
+            <button class="tab-button active" onclick="showTab('auth')">Authentication</button>
+            <button class="tab-button" onclick="showTab('upload')">Image Upload</button>
+            <button class="tab-button" onclick="showTab('health')">Health Check</button>
+        </div>
+
+        <!-- Authentication Tab -->
+        <div id="auth" class="tab-content active">
+            <h2>Admin Authentication</h2>
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" placeholder="Enter username">
+            </div>
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" placeholder="Enter password">
+            </div>
+            <button onclick="login()">Login</button>
+            <div id="authResult" class="result" style="display: none;"></div>
+        </div>
+
+        <!-- Upload Tab -->
+        <div id="upload" class="tab-content">
+            <h2>Image Upload</h2>
+            <div class="form-group">
+                <label for="imageInput">Select Image:</label>
+                <input type="file" id="imageInput" accept="image/*">
+                <div id="imagePreview"></div>
+            </div>
+            <button onclick="uploadImage()">Upload Image</button>
+            <div id="uploadResult" class="result" style="display: none;"></div>
+        </div>
+
+        <!-- Health Check Tab -->
+        <div id="health" class="tab-content">
+            <h2>Health Check</h2>
+            <button onclick="checkHealth()">Check Health</button>
+            <div id="healthResult" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        // API Configuration
+        const API_URL = 'https://render-rtalks-backend.onrender.com';
+        let authToken = localStorage.getItem('authToken');
+
+        // Tab Management
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            document.getElementById(tabId).classList.add('active');
+            document.querySelector(`button[onclick="showTab('${tabId}')"]`).classList.add('active');
+        }
+
+        // Authentication
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('authResult');
+
+            try {
+                const response = await fetch(`${API_URL}/api/admin/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    authToken = data.token;
+                    localStorage.setItem('authToken', authToken);
+                    resultDiv.innerHTML = `<div class="success">Login successful! Token: ${authToken.substring(0, 20)}...</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">Error: ${data.error}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+            resultDiv.style.display = 'block';
+        }
+
+        // Image Upload
+        document.getElementById('imageInput').addEventListener('change', function(e) {
+            const preview = document.getElementById('imagePreview');
+            preview.innerHTML = '';
+            
+            const file = e.target.files[0];
+            if (file) {
+                const img = document.createElement('img');
+                img.src = URL.createObjectURL(file);
+                preview.appendChild(img);
+            }
+        });
+
+        async function uploadImage() {
+            const fileInput = document.getElementById('imageInput');
+            const resultDiv = document.getElementById('uploadResult');
+
+            if (!fileInput.files.length) {
+                resultDiv.innerHTML = '<div class="error">Please select an image first</div>';
+                resultDiv.style.display = 'block';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('image', fileInput.files[0]);
+
+            try {
+                const response = await fetch(`${API_URL}/api/upload`, {
+                    method: 'POST',
+                    headers: authToken ? {
+                        'Authorization': `Bearer ${authToken}`
+                    } : {},
+                    body: formData
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            Upload successful!<br>
+                            <strong>File URL:</strong> <a href="${API_URL}${data.file.url}" target="_blank">${data.file.url}</a><br>
+                            <strong>Size:</strong> ${Math.round(data.file.size / 1024)} KB<br>
+                            <strong>Type:</strong> ${data.file.mimetype}
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">Error: ${data.error}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+            resultDiv.style.display = 'block';
+        }
+
+        // Health Check
+        async function checkHealth() {
+            const resultDiv = document.getElementById('healthResult');
+            
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                const data = await response.json();
+                resultDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+            resultDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

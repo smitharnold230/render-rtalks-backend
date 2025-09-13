@@ -24,6 +24,8 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "blob:", process.env.UPLOAD_URL || "'self'"],
       upgradeInsecureRequests: null
     }
@@ -68,10 +70,8 @@ app.use('/uploads', express.static(UPLOAD_PATH, {
   }
 }));
 
-// Serve static files in development only
-if (!IS_PRODUCTION) {
-  app.use(express.static(path.join(__dirname)));
-}
+// Serve static files from public directory
+app.use(express.static(path.join(__dirname, 'public')));
 
 // CORS configuration with proper origin handling
 const allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : ['http://localhost:3000'];
