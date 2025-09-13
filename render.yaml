@@ -6,7 +6,7 @@ services:
     buildCommand: npm install
     startCommand: node server.js
     runtime: node
-    nodeVersion: 18.x
+    nodeVersion: 20.x
     healthCheckPath: /health
     disk:
       name: uploads
