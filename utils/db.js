@@ -46,6 +46,14 @@ pool.on('error', (err, client) => {
   console.error('Unexpected error on idle client', err);
 });
 
+pool.on('connect', () => {
+  console.log('Database connected successfully');
+});
+
+pool.on('remove', () => {
+  console.log('Database connection closed');
+});
+
 // Test the database connection with proper error handling
 const testConnection = async () => {
   let client;

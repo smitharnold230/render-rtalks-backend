@@ -111,6 +111,22 @@
         .tab-content.active {
             display: block;
         }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+            align-items: center;
+        }
+        #logoutButton {
+            padding: 8px 16px;
+            border-radius: 4px;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        #logoutButton:hover {
+            background-color: #bd2130;
+        }
         #speakersList {
             margin-top: 20px;
         }
@@ -147,6 +163,7 @@
             <button class="tab active" onclick="showTab('login')">1. Login</button>
             <button class="tab" onclick="showTab('create')">2. Create Speaker</button>
             <button class="tab" onclick="showTab('list')">3. View Speakers</button>
+            <button id="logoutButton" onclick="logout()" style="display: none; margin-left: auto; background-color: #dc3545;">Logout</button>
         </div>
 
         <div id="loginTab" class="tab-content active">
@@ -265,6 +282,7 @@
                     authToken = result.token;
                     localStorage.setItem('adminToken', authToken);
                     showResult('loginResult', 'Login successful!', 'success');
+                    document.getElementById('logoutButton').style.display = 'block';
                     showTab('create');
                 } else {
                     showResult('loginResult', `Login failed: ${result.error}`, 'error');
@@ -321,18 +339,31 @@
         // Load Speakers
         async function loadSpeakers() {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/public/speakers`);
-                const data = await response.json();
+                const url = `${API_BASE_URL}/api/public/speakers`;
+                document.getElementById('speakersList').innerHTML = `<div>Fetching speakers from: ${url}</div>`;
+                
+                const response = await fetch(url);
+                document.getElementById('speakersList').innerHTML += `<div>Response status: ${response.status}</div>`;
+                
+                const text = await response.text();
+                let data;
+                try {
+                    data = JSON.parse(text);
+                    document.getElementById('speakersList').innerHTML += `<div>Response data: ${JSON.stringify(data, null, 2)}</div>`;
+                } catch (e) {
+                    document.getElementById('speakersList').innerHTML += `<div>Raw response: ${text}</div>`;
+                    throw e;
+                }
                 
                 const speakersList = document.getElementById('speakersList');
                 
                 if (response.ok) {
                     speakersList.innerHTML = data.speakers.map(speaker => `
                         <div class="speaker-card">
-                            <img src="${speaker.imageUrl || '/placeholder.jpg'}" 
+                            <img src="${speaker.image_url || '/placeholder.jpg'}" 
                                  alt="${speaker.name}" 
                                  class="speaker-image"
-                                 onerror="this.src='/placeholder.jpg'">
+                                 onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2VlZSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjAiIHRleHQ9ImFuY2hvciIgZmlsbD0iIzk5OSIgZHk9Ii4zZW0iIHRleHQtYW5jaG9yPSJtaWRkbGUiPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg=='">
                             <div class="speaker-info">
                                 <h3>${speaker.name}</h3>
                                 <p>${speaker.expertise || 'No expertise listed'}</p>
@@ -395,8 +426,18 @@
             }, 5000);
         }
 
+        // Logout function
+        function logout() {
+            authToken = null;
+            localStorage.removeItem('adminToken');
+            document.getElementById('logoutButton').style.display = 'none';
+            showResult('loginResult', 'Logged out successfully!', 'success');
+            showTab('login');
+        }
+
         // Initial load
         if (authToken) {
+            document.getElementById('logoutButton').style.display = 'block';
             showTab('list');
         }
     </script>

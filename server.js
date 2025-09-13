@@ -33,13 +33,17 @@ app.use(cors({
 }));
 
 app.use(rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
+  windowMs: 1 * 60 * 1000, // 1 minute window
+  max: 1000, // More generous limit for development
   message: { error: 'Too many requests from this IP' }
 }));
 
-// Serve static files from the root directory
-app.use(express.static(__dirname));
+// Serve static files from the root directory with caching
+app.use(express.static(__dirname, {
+  maxAge: '1d',
+  etag: true,
+  lastModified: true
+}));
 
 // Serve uploaded files with proper headers
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
@@ -53,7 +57,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
 }));
 
 app.use('/api/admin', require('./routes/admin'));
-app.use('/api', require('./routes/public'));
+app.use('/api/public', require('./routes/public'));
 
 app.get('/health', async (req, res) => {
   try {
@@ -96,11 +100,11 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`
- Server running on port ${PORT}
- Mode: ${process.env.NODE_ENV || 'development'}
- CORS: ${process.env.ALLOWED_ORIGINS || '*'}
- Health: ${process.env.NODE_ENV === 'production' ? 'https://render-rtalks-backend.onrender.com/health' : `http://localhost:${PORT}/health`}
-  `);
+const server = app.listen(PORT, () => {
+  console.log(`Server started successfully on port ${PORT}`);
+});
+
+server.on('error', (err) => {
+  console.error('Server failed to start:', err);
+  process.exit(1);
 });

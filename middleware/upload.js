@@ -43,8 +43,8 @@ const fileFilter = (req, file, cb) => {
   cb(null, true);
 };
 
-// Configure multer upload with limits
-const upload = multer({
+// Create multer instance
+const multerUpload = multer({
   storage: multerStorage,
   fileFilter: fileFilter,
   limits: {
@@ -75,7 +75,5 @@ const handleUploadError = (err, req, res, next) => {
   next();
 };
 
-module.exports = {
-  upload,
-  handleUploadError
-};
+// Export the multer middleware directly
+module.exports = multerUpload;

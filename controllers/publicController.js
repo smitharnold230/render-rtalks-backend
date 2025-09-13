@@ -44,13 +44,30 @@ const getPackages = async (req, res) => {
 // Get active speakers
 const getSpeakers = async (req, res) => {
   try {
+    console.log('Attempting to fetch speakers from database...');
     const result = await db.query('SELECT * FROM speakers ORDER BY name ASC');
+    console.log('Query result:', result);
     const speakers = result.rows;
+    console.log('Returning speakers:', speakers);
     
-    res.json({ speakers });
+    res.json({ 
+      speakers,
+      _debug: {
+        timestamp: new Date().toISOString(),
+        rowCount: result.rowCount,
+        query: 'SELECT * FROM speakers ORDER BY name ASC'
+      }
+    });
   } catch (err) {
     console.error('Error fetching speakers:', err);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ 
+      error: 'Server error',
+      _debug: {
+        message: err.message,
+        stack: err.stack,
+        timestamp: new Date().toISOString()
+      }
+    });
   }
 };
 
