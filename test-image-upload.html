@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>R-Talks - Test Speaker Image Upload</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        input:focus, textarea:focus {
+            border-color: #007bff;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+        .preview-container {
+            margin: 10px 0;
+            text-align: center;
+        }
+        .preview-image {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 4px;
+            display: none;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            margin-bottom: -1px;
+            background: none;
+            color: #666;
+        }
+        .tab.active {
+            background-color: white;
+            border: 1px solid #ddd;
+            border-bottom-color: white;
+            color: #007bff;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        #speakersList {
+            margin-top: 20px;
+        }
+        .speaker-card {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            background-color: white;
+        }
+        .speaker-image {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            margin-right: 15px;
+            border-radius: 4px;
+        }
+        .speaker-info {
+            flex-grow: 1;
+        }
+        .speaker-controls {
+            display: flex;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>R-Talks - Test Speaker Image Upload</h1>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('login')">1. Login</button>
+            <button class="tab" onclick="showTab('create')">2. Create Speaker</button>
+            <button class="tab" onclick="showTab('list')">3. View Speakers</button>
+        </div>
+
+        <div id="loginTab" class="tab-content active">
+            <h2>Admin Login</h2>
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" placeholder="Enter admin username">
+            </div>
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" placeholder="Enter admin password">
+            </div>
+            <button onclick="login()">Login</button>
+            <div id="loginResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div id="createTab" class="tab-content">
+            <h2>Create New Speaker</h2>
+            <form id="speakerForm">
+                <div class="form-group">
+                    <label for="name">Name:</label>
+                    <input type="text" id="name" required placeholder="Speaker's full name">
+                </div>
+                
+                <div class="form-group">
+                    <label for="bio">Bio:</label>
+                    <textarea id="bio" rows="3" placeholder="Speaker's biography"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="expertise">Expertise:</label>
+                    <input type="text" id="expertise" placeholder="Speaker's areas of expertise">
+                </div>
+                
+                <div class="form-group">
+                    <label for="image">Speaker Image:</label>
+                    <input type="file" id="image" accept="image/*" onchange="previewImage(event)">
+                </div>
+                
+                <div class="preview-container">
+                    <img id="imagePreview" class="preview-image" alt="Preview">
+                </div>
+                
+                <button type="submit">Create Speaker</button>
+            </form>
+            <div id="createResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div id="listTab" class="tab-content">
+            <h2>Speakers List</h2>
+            <button onclick="loadSpeakers()">Refresh List</button>
+            <div id="speakersList"></div>
+        </div>
+    </div>
+    
+    <script>
+        let authToken = localStorage.getItem('adminToken');
+        
+        // Tab Management
+        function showTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+                if(tab.textContent.includes(tabName)) {
+                    tab.classList.add('active');
+                }
+            });
+            
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            
+            // Load speakers if viewing list tab
+            if(tabName === 'list') {
+                loadSpeakers();
+            }
+        }
+
+        // Image Preview
+        function previewImage(event) {
+            const preview = document.getElementById('imagePreview');
+            const file = event.target.files[0];
+            
+            if (file) {
+                preview.style.display = 'block';
+                preview.src = URL.createObjectURL(file);
+            } else {
+                preview.style.display = 'none';
+            }
+        }
+
+        // Login Function
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    authToken = result.token;
+                    localStorage.setItem('adminToken', authToken);
+                    showResult('loginResult', 'Login successful!', 'success');
+                    showTab('create');
+                } else {
+                    showResult('loginResult', `Login failed: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showResult('loginResult', `Network error: ${error.message}`, 'error');
+            }
+        }
+
+        // Create Speaker
+        document.getElementById('speakerForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!authToken) {
+                showResult('createResult', 'Please login first', 'warning');
+                showTab('login');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('name', document.getElementById('name').value);
+            formData.append('bio', document.getElementById('bio').value);
+            formData.append('expertise', document.getElementById('expertise').value);
+            
+            const imageFile = document.getElementById('image').files[0];
+            if (imageFile) {
+                formData.append('image', imageFile);
+            }
+            
+            try {
+                const response = await fetch('/api/admin/speakers', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showResult('createResult', 'Speaker created successfully!', 'success');
+                    document.getElementById('speakerForm').reset();
+                    document.getElementById('imagePreview').style.display = 'none';
+                    showTab('list');
+                } else {
+                    showResult('createResult', `Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showResult('createResult', `Network error: ${error.message}`, 'error');
+            }
+        });
+
+        // Load Speakers
+        async function loadSpeakers() {
+            try {
+                const response = await fetch('/api/public/speakers');
+                const data = await response.json();
+                
+                const speakersList = document.getElementById('speakersList');
+                
+                if (response.ok) {
+                    speakersList.innerHTML = data.speakers.map(speaker => `
+                        <div class="speaker-card">
+                            <img src="${speaker.imageUrl || '/placeholder.jpg'}" 
+                                 alt="${speaker.name}" 
+                                 class="speaker-image"
+                                 onerror="this.src='/placeholder.jpg'">
+                            <div class="speaker-info">
+                                <h3>${speaker.name}</h3>
+                                <p>${speaker.expertise || 'No expertise listed'}</p>
+                                <small>${speaker.bio || 'No bio available'}</small>
+                            </div>
+                            ${authToken ? `
+                                <div class="speaker-controls">
+                                    <button onclick="deleteSpeaker('${speaker.id}')" style="background-color: #dc3545;">Delete</button>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `).join('');
+                } else {
+                    speakersList.innerHTML = `<div class="error">Error loading speakers: ${data.error}</div>`;
+                }
+            } catch (error) {
+                document.getElementById('speakersList').innerHTML = 
+                    `<div class="error">Network error: ${error.message}</div>`;
+            }
+        }
+
+        // Delete Speaker
+        async function deleteSpeaker(id) {
+            if (!authToken) {
+                showTab('login');
+                return;
+            }
+
+            if (!confirm('Are you sure you want to delete this speaker?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/admin/speakers/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                if (response.ok) {
+                    loadSpeakers();
+                } else {
+                    const result = await response.json();
+                    alert(`Error deleting speaker: ${result.error}`);
+                }
+            } catch (error) {
+                alert(`Network error: ${error.message}`);
+            }
+        }
+
+        // Utility Functions
+        function showResult(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `result ${type}`;
+            element.style.display = 'block';
+            setTimeout(() => {
+                element.style.display = 'none';
+            }, 5000);
+        }
+
+        // Initial load
+        if (authToken) {
+            showTab('list');
+        }
+    </script>
+</body>
+</html>

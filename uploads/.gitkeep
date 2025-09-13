@@ -1,0 +1,2 @@
+# Keep uploads directory but ignore its contents
+!uploads/.gitkeep
