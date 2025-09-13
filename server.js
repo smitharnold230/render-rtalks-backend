@@ -46,7 +46,11 @@ app.use(express.static(__dirname, {
 }));
 
 // Serve uploaded files with proper headers
-app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+const storage = require('./utils/storage');
+const uploadPath = storage.getUploadPath();
+
+// Serve uploads from the appropriate directory based on environment
+app.use('/uploads', express.static(uploadPath, {
   maxAge: '1d',
   etag: true,
   lastModified: true,
@@ -55,6 +59,19 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
     res.setHeader('Access-Control-Allow-Origin', '*');
   }
 }));
+
+// In production, also serve from tmp directory
+if (process.env.NODE_ENV === 'production') {
+  app.use('/tmp-uploads', express.static('/tmp/uploads', {
+    maxAge: '1d',
+    etag: true,
+    lastModified: true,
+    setHeaders: (res, path) => {
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+    }
+  }));
+}
 
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/public', require('./routes/public'));

@@ -224,6 +224,13 @@
         const API_BASE_URL = window.location.hostname === 'localhost' 
             ? 'http://localhost:3000' 
             : 'https://render-rtalks-backend.onrender.com';
+            
+        // Function to get full image URL
+        function getImageUrl(imagePath) {
+            if (!imagePath) return null;
+            if (imagePath.startsWith('http')) return imagePath;
+            return `${API_BASE_URL}${imagePath}`;
+        }
         
         let authToken = localStorage.getItem('adminToken');
         
@@ -360,7 +367,7 @@
                 if (response.ok) {
                     speakersList.innerHTML = data.speakers.map(speaker => `
                         <div class="speaker-card">
-                            <img src="${speaker.image_url || '/placeholder.jpg'}" 
+                            <img src="${getImageUrl(speaker.image_url) || '/placeholder.jpg'}" 
                                  alt="${speaker.name}" 
                                  class="speaker-image"
                                  onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2VlZSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjAiIHRleHQ9ImFuY2hvciIgZmlsbD0iIzk5OSIgZHk9Ii4zZW0iIHRleHQtYW5jaG9yPSJtaWRkbGUiPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg=='">

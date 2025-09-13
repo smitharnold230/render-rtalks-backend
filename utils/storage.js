@@ -11,6 +11,19 @@ const getUploadPath = () => {
   return path.join(process.cwd(), 'uploads');
 };
 
+// Get the public URL for an uploaded file
+const getPublicUrl = (filename) => {
+  if (!filename) return null;
+
+  if (process.env.NODE_ENV === 'production') {
+    // Use the configured UPLOAD_URL in production
+    const baseUrl = process.env.UPLOAD_URL || `https://${process.env.RENDER_EXTERNAL_HOSTNAME}/uploads`;
+    return `${baseUrl}/${filename}`;
+  }
+  // Use local path for development
+  return `/uploads/${filename}`;
+};
+
 // Ensure the upload directory exists and is writable
 const initializeUploadDirectory = () => {
   const uploadPath = getUploadPath();
